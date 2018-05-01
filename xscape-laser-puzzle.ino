@@ -1,6 +1,7 @@
 /* Arduino Library Includes */
 
 #include "TaskAction.h"
+#include "EEPROMex.h"
 
 /* Application Includes */
 
@@ -10,7 +11,13 @@
 
 /* Defines, typedefs, constants */
 
-static const char UNLOCK_SEQUENCE[] = {0,1,2,3,4};
+static const char UNLOCK_SEQUENCE[] = {
+	/*
+	Lasers are numbered 0 to 4 from top to bottom.
+	Change the unlock code here!
+	*/ 
+	0,1,2,3,4
+};
 
 static const int LASER_CONTROL_PIN = 3;
 static const int MAGLOCK_CONTROL_PIN = 4;
@@ -77,6 +84,27 @@ static void debug_task_fn(TaskAction* this_task)
 }
 static TaskAction s_debug_task(debug_task_fn, 1000, INFINITE_TICKS);
 
+static void register_rfid(unsigned long for_seconds)
+{
+	while(millis() < (for_seconds * 1000UL))
+	{
+		rfid_tick();
+		if (check_and_clear(s_rfid_flag))
+		{
+			Serial.print("Saving UID: ");
+			rfid_print_current_uid();
+			Serial.println("");
+
+			rfid_save_current_uid();
+
+			return;
+		}
+	}
+	Serial.print("No RFID seen, using ");
+	rfid_print_saved_uid();
+	Serial.println("");
+}
+
 /* Public Functions */
 
 void setup()
@@ -91,6 +119,8 @@ void setup()
 	maglock_control(true);
 
 	Serial.begin(115200);
+
+	register_rfid(5);
 }
 
 void loop()
@@ -112,7 +142,7 @@ void loop()
 	case MODE_RFID:
 		rfid_tick();
 
-		if (check_and_clear(s_rfid_flag))
+		if (check_and_clear(s_rfid_flag) && rfid_match_saved())
 		{
 			maglock_control(false);
 			s_game_mode = MODE_PUZZLE_COMPLETE;

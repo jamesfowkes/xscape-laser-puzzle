@@ -12,7 +12,7 @@
 static const char NO_DETECT = -1;
 
 static const int DETECTOR_PINS[NUMBER_OF_DETECTORS] = {
-	7,8,9,10,A0
+	A0,A1,A2,A3,A4
 };
 
 static const int DEBOUNCE_COUNT = 5;

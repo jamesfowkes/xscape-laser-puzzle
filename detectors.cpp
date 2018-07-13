@@ -11,7 +11,7 @@
 
 static const char NO_DETECT = -1;
 
-static const int DETECTOR_PINS[NUMBER_OF_DETECTORS] = {
+static const uint8_t DETECTOR_PINS[NUMBER_OF_DETECTORS] = {
 	A0,A1,A2,A3,A4
 };
 

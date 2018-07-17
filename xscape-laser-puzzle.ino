@@ -109,6 +109,8 @@ static void register_rfid(unsigned long for_seconds)
 
 void setup()
 {
+	Serial.begin(115200);
+
 	detectors_setup(s_detector_flag);
 	rfid_setup(s_rfid_flag);
 
@@ -117,8 +119,6 @@ void setup()
 
 	laser_control(true);
 	maglock_control(true);
-
-	Serial.begin(115200);
 
 	register_rfid(5);
 }

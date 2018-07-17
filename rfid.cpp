@@ -77,7 +77,15 @@ void rfid_setup(bool& rfid_update_flag)
 	sp_rfid_update_flag = &rfid_update_flag;
 
 	SPI.begin();
-	s_rfid.PCD_Init();
+	
+	bool got_reader = false;
+	while(!got_reader)
+	{
+	    Serial.print("Checking for reader in slot ");
+	    s_rfid.PCD_Init();
+	    got_reader = s_rfid.PCD_DumpVersionToSerial();
+	    delay(50);
+    }
 }
 
 void rfid_tick()

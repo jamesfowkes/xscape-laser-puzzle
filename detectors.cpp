@@ -11,13 +11,13 @@
 
 static const char NO_DETECT = -1;
 
-static const int DETECTOR_PINS[NUMBER_OF_DETECTORS] = {
+static const uint8_t DETECTOR_PINS[NUMBER_OF_DETECTORS] = {
 	A0,A1,A2,A3,A4
 };
 
 static const int DEBOUNCE_COUNT = 5;
 
-static char s_last_tripped[5] = {NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT};
+static char s_last_tripped[NUMBER_OF_DETECTORS] = {NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT};
 
 /* Private Variables */
 

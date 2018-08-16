@@ -19,8 +19,8 @@ static const char UNLOCK_SEQUENCE[] = {
 	0,1,2,3,4
 };
 
-static const int LASER_CONTROL_PIN = 3;
-static const int MAGLOCK_CONTROL_PIN = 2;
+static const int LASER_CONTROL_PIN = 2;
+static const int MAGLOCK_CONTROL_PIN = 3;
 
 enum game_mode
 {
@@ -109,6 +109,8 @@ static void register_rfid(unsigned long for_seconds)
 
 void setup()
 {
+	Serial.begin(115200);
+
 	detectors_setup(s_detector_flag);
 	rfid_setup(s_rfid_flag);
 
@@ -117,8 +119,6 @@ void setup()
 
 	laser_control(true);
 	maglock_control(true);
-
-	Serial.begin(115200);
 
 	register_rfid(5);
 }

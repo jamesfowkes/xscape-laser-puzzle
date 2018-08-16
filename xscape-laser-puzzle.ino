@@ -20,7 +20,7 @@ static const char UNLOCK_SEQUENCE[] = {
 };
 
 static const int LASER_CONTROL_PIN = 3;
-static const int MAGLOCK_CONTROL_PIN = 4;
+static const int MAGLOCK_CONTROL_PIN = 2;
 
 enum game_mode
 {

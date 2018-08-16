@@ -41,7 +41,7 @@ static GAME_MODE s_game_mode = MODE_LASERS;
 
 static void laser_control(bool on)
 {
-	digitalWrite(LASER_CONTROL_PIN, on ? HIGH : LOW);
+	digitalWrite(LASER_CONTROL_PIN, on ? LOW : HIGH);
 }
 
 static void maglock_control(bool on)

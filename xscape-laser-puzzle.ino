@@ -8,16 +8,9 @@
 #include "application.h"
 #include "detectors.h"
 #include "rfid.h"
+#include "settings.h"
 
 /* Defines, typedefs, constants */
-
-static const char UNLOCK_SEQUENCE[] = {
-	/*
-	Lasers are numbered 0 to 4 from top to bottom.
-	Change the unlock code here!
-	*/ 
-	0,1,2,3,4
-};
 
 static const bool INVERT_MAGLOCK = false;
 static const int LASER_CONTROL_PIN = 4;

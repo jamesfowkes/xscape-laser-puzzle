@@ -19,8 +19,10 @@ static const char UNLOCK_SEQUENCE[] = {
 	0,1,2,3,4
 };
 
-static const int LASER_CONTROL_PIN = 2;
-static const int MAGLOCK_CONTROL_PIN = 3;
+static const bool INVERT_MAGLOCK = false;
+static const int LASER_CONTROL_PIN = 4;
+static const int FIRST_MAGLOCK_CONTROL_PIN = 2;
+static const int SECOND_MAGLOCK_CONTROL_PIN = 3;
 
 enum game_mode
 {
@@ -41,12 +43,17 @@ static GAME_MODE s_game_mode = MODE_LASERS;
 
 static void laser_control(bool on)
 {
-	digitalWrite(LASER_CONTROL_PIN, on ? LOW : HIGH);
+	digitalWrite(LASER_CONTROL_PIN, on ? HIGH : LOW);
 }
 
-static void maglock_control(bool on)
+static void first_maglock_control(bool on)
 {
-	digitalWrite(MAGLOCK_CONTROL_PIN, on ? HIGH : LOW);	
+	digitalWrite(FIRST_MAGLOCK_CONTROL_PIN, (on ^ INVERT_MAGLOCK) ? HIGH : LOW);
+}
+
+static void second_maglock_control(bool on)
+{
+	digitalWrite(SECOND_MAGLOCK_CONTROL_PIN, (on ^ INVERT_MAGLOCK) ? HIGH : LOW);	
 }
 
 static bool check_and_clear(bool& b)
@@ -76,6 +83,12 @@ static void debug_task_fn(TaskAction* this_task)
 		break;
 	case MODE_RFID:
 		Serial.println("RFID: ");
+		if (s_rfid_flag)
+		{
+			Serial.print("Got UID: ");
+			rfid_print_current_uid();
+			Serial.println("");	
+		}
 		break;
 	case MODE_PUZZLE_COMPLETE:
 		Serial.println("Complete");
@@ -115,11 +128,12 @@ void setup()
 	rfid_setup(s_rfid_flag);
 
 	pinMode(LASER_CONTROL_PIN, OUTPUT);
-	pinMode(MAGLOCK_CONTROL_PIN, OUTPUT);
+	pinMode(FIRST_MAGLOCK_CONTROL_PIN, OUTPUT);
+	pinMode(SECOND_MAGLOCK_CONTROL_PIN, OUTPUT);
 
 	laser_control(true);
-	maglock_control(true);
-
+	first_maglock_control(false);
+	second_maglock_control(false);
 	register_rfid(5);
 }
 
@@ -135,6 +149,7 @@ void loop()
 			if (detectors_match_sequence(UNLOCK_SEQUENCE))
 			{
 				laser_control(false);
+				first_maglock_control(true);
 				s_game_mode = MODE_RFID;
 			}
 		}
@@ -144,7 +159,7 @@ void loop()
 
 		if (check_and_clear(s_rfid_flag) && rfid_match_saved())
 		{
-			maglock_control(false);
+			second_maglock_control(true);
 			s_game_mode = MODE_PUZZLE_COMPLETE;
 		}
 		break;

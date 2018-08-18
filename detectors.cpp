@@ -15,6 +15,8 @@ static const uint8_t DETECTOR_PINS[NUMBER_OF_DETECTORS] = {
 	A0,A1,A2,A3,A4
 };
 
+static const uint8_t DETECTOR_POLARITY_PIN = A5;
+
 static const int DEBOUNCE_COUNT = 5;
 
 static char s_last_tripped[NUMBER_OF_DETECTORS] = {NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT};
@@ -24,6 +26,7 @@ static char s_last_tripped[NUMBER_OF_DETECTORS] = {NO_DETECT, NO_DETECT, NO_DETE
 static DETECTOR s_detectors[NUMBER_OF_DETECTORS];
 static int s_tripped_count = 0;
 static bool * sp_detector_update_flag;
+static uint8_t s_detector_trip_condition = LOW;
 
 /* Private Functions */
 
@@ -83,7 +86,7 @@ static void debounce_task_fn(TaskAction* this_task)
 
 	for (i=0; i<NUMBER_OF_DETECTORS; i++)
 	{
-		debounce_detector(s_detectors[i], digitalRead(DETECTOR_PINS[i])==LOW);
+		debounce_detector(s_detectors[i], digitalRead(DETECTOR_PINS[i])==s_detector_trip_condition);
 		if (s_detectors[i].tripped) { s_tripped_count++; }
 		at_least_one_just_tripped |= s_detectors[i].just_tripped;
 	}
@@ -102,11 +105,19 @@ static TaskAction s_debounce_task(debounce_task_fn, 10, INFINITE_TICKS);
 
 void detectors_setup(bool& detector_update_flag)
 {
+
+	pinMode(DETECTOR_POLARITY_PIN, INPUT_PULLUP);
+	delay(50);
+	s_detector_trip_condition = digitalRead(DETECTOR_POLARITY_PIN) == LOW ? HIGH : LOW;
+
+	Serial.print("Detector: Tripping on pin ");
+	Serial.println(s_detector_trip_condition == HIGH ? "high" : "low");
+
 	sp_detector_update_flag = &detector_update_flag;
 
 	for (uint8_t i=0; i<NUMBER_OF_DETECTORS; i++)
 	{
-		pinMode(DETECTOR_PINS[i], INPUT_PULLUP);
+		pinMode(DETECTOR_PINS[i], INPUT);
 		s_detectors[i].just_tripped = false;
 		s_detectors[i].tripped = false;
 		s_detectors[i].just_untripped = false;

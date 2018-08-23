@@ -11,12 +11,12 @@ To install:
   - In Arduino IDE, click Sketch... Include Library... Add ZIP Library
   - Select the TaskAction folder in the unzipped folder and click OK.
 
-### MFRC522 RFID library
+### AltSoftSerial library
 
 To install:
  - In Arduino IDE, click Sketch... Include Library... Manage Libraries.
- - In the search bar, enter "MFRC522".
- - Select the "MFRC522" library in the list and click "Install"
+ - In the search bar, enter "AltSoftSerial".
+ - Select the "AltSoftSerial" library in the list and click "Install"
 
 ## EEPROMEx from www.returnzero.co.uk/public/EEPROMEx.zip
 

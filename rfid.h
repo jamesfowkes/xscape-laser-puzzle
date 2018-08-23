@@ -1,9 +1,9 @@
 #ifndef _RFID_H_
 #define _RFID_H_
 
-typedef struct {
-	byte		size;
-	byte		bytes[10];
+typedef struct
+{
+	char bytes[32];
 } UID;
 
 void rfid_setup(bool& rfid_update_flag);

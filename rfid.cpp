@@ -1,8 +1,7 @@
 /* Arduino Library Includes */
 
-#include "TaskAction.h"
-#include "MFRC522.h"
 #include "EEPROMex.h"
+#include "AltSoftSerial.h"
 
 /* Application Includes */
 
@@ -10,14 +9,11 @@
 
 /* Private Variables */
 
-static uint8_t SS_PIN = 10;
-static uint8_t RST_PIN = 9;
-
+static AltSoftSerial s_alt_serial;
 static bool * sp_rfid_update_flag;
-static MFRC522 s_rfid = MFRC522(SS_PIN, RST_PIN);
-
-static UID s_current_uid;
-
+static bool s_serial_rx_flag = false;
+static UID s_uid;
+static uint8_t s_uid_index;
 static const int EEPROM_ADDRESS_UID = EEPROM.getAddress(sizeof(UID));
 
 /*
@@ -34,41 +30,11 @@ static void set_eeprom_uid(UID& uid)
     EEPROM.writeBlock(EEPROM_ADDRESS_UID, uid);
 }
 
-static bool get_uid(MFRC522& mfrc522, UID& uid)
-{
-    if (!mfrc522.PICC_IsNewCardPresent()) { return false; }
-    if (!mfrc522.PICC_ReadCardSerial()) { return false; }
-    if (mfrc522.uid.size == 0) { return false; }
-
-    memcpy(uid.bytes, mfrc522.uid.uidByte, mfrc522.uid.size);
-    uid.size = mfrc522.uid.size;
-
-    return true;
-
-}
-
-static void rfid_task_fn(TaskAction* this_task)
-{
-    (void)this_task;
-    *sp_rfid_update_flag = get_uid(s_rfid, s_current_uid);
-}
-static TaskAction s_rfid_task(rfid_task_fn, 50, INFINITE_TICKS);
-
 static void print_uid(UID& uid)
 {
-    if ((uid.size == 4) || (uid.size == 7) || (uid.size == 10))
-    {
-        for(uint8_t i=0; i<uid.size; i++)
-        {
-            Serial.print(uid.bytes[i], 16);
-        }
-    }
-    else
-    {
-        Serial.print(" Invalid UID? Size=");
-        Serial.print(uid.size);
-    }
+    Serial.println(uid.bytes);
 }
+
 /*
  * Public Functions
  */
@@ -76,45 +42,36 @@ static void print_uid(UID& uid)
 void rfid_setup(bool& rfid_update_flag)
 {
     sp_rfid_update_flag = &rfid_update_flag;
-
-    SPI.begin();
-    
-    bool got_reader = false;
-    while(!got_reader)
-    {
-        Serial.print("RFID: Checking for reader in slot ");
-        s_rfid.PCD_Init();
-        got_reader = s_rfid.PCD_DumpVersionToSerial();
-        delay(50);
-    }
-
-    Serial.print("RFID: Self Test...");
-    Serial.println(s_rfid.PCD_PerformSelfTest() ? "pass" : "fail");
-
-    got_reader = false;
-    while(!got_reader)
-    {
-        s_rfid.PCD_Init();
-        got_reader = s_rfid.PCD_DumpVersionToSerial();
-    }
-
-    Serial.print("RFID: Old Gain: ");
-    Serial.println(s_rfid.PCD_GetAntennaGain());
-    s_rfid.PCD_AntennaOff();
-    s_rfid.PCD_SetAntennaGain(s_rfid.RxGain_48dB);
-    Serial.print("RFID: New Gain: ");
-    Serial.println(s_rfid.PCD_GetAntennaGain());
-    s_rfid.PCD_AntennaOn();
+    s_alt_serial.begin(9600);
 }
 
 void rfid_tick()
 {
-    s_rfid_task.tick();
+    char c;
+    if (s_alt_serial.available())
+    {
+        c = s_alt_serial.read();
+        switch(c)
+        {
+        case 2:
+            *sp_rfid_update_flag = false;
+            s_uid_index = 0;
+            s_uid.bytes[s_uid_index] = '\0';
+            break;
+        case 3:
+            *sp_rfid_update_flag = true;
+            break;
+        default:
+            s_uid.bytes[s_uid_index++] = c;
+            s_uid.bytes[s_uid_index] = '\0';
+            break;
+        }
+    }
 }
 
 void rfid_print_current_uid()
 {
-    print_uid(s_current_uid);
+    print_uid(s_uid);
 }
 
 void rfid_print_saved_uid()
@@ -126,7 +83,7 @@ void rfid_print_saved_uid()
 
 void rfid_save_current_uid()
 {
-    set_eeprom_uid(s_current_uid);
+    set_eeprom_uid(s_uid);
 }
 
 bool rfid_match_saved()
@@ -134,7 +91,5 @@ bool rfid_match_saved()
     UID eeprom_uid;
     get_eeprom_uid(eeprom_uid);
 
-    if (eeprom_uid.size != s_current_uid.size) { return false; }
-
-    return memcmp(eeprom_uid.bytes, s_current_uid.bytes, eeprom_uid.size) == 0;
+    return strcmp(eeprom_uid.bytes, s_uid.bytes) == 0;
 }

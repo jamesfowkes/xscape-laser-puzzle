@@ -8,7 +8,7 @@ static const char UNLOCK_SEQUENCE[SEQUENCE_LENGTH] = {
 	Lasers are numbered 0 to 4 from top to bottom.
 	Change the unlock sequence here!
 	*/ 
-	0,1,3,4
+	0,3,1,4
 };
 
 #endif

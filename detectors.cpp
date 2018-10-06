@@ -6,8 +6,11 @@
 
 #include "application.h"
 #include "detectors.h"
+#include "settings.h"
 
 /* Defines, typedefs, constants */
+
+static const uint8_t NUMBER_OF_DETECTORS = 5;
 
 static const char NO_DETECT = -1;
 
@@ -19,7 +22,7 @@ static const uint8_t DETECTOR_POLARITY_PIN = A5;
 
 static const int DEBOUNCE_COUNT = 5;
 
-static char s_last_tripped[NUMBER_OF_DETECTORS] = {NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT, NO_DETECT};
+static char s_sequence[SEQUENCE_LENGTH];
 
 /* Private Variables */
 
@@ -30,23 +33,38 @@ static uint8_t s_detector_trip_condition = LOW;
 
 /* Private Functions */
 
+static char detector_in_sequence(char detector_id)
+{
+	for (uint8_t i=0; i<SEQUENCE_LENGTH; i++)
+	{
+		if (detector_id == UNLOCK_SEQUENCE[i])
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 static char get_tripped(DETECTOR * s_detectors)
 {
 	uint8_t i;
 	for (i = 0; i < NUMBER_OF_DETECTORS; i++)
 	{
-		if (s_detectors[i].tripped) { return i; }
+		if (s_detectors[i].tripped)
+		{
+			return i;
+		}
 	}
 	return NO_DETECT;
 }
 
 static void log_tripped(char pressed, char * log)
 {
-	log[0] = log[1];
-	log[1] = log[2];
-	log[2] = log[3];
-	log[3] = log[4];
-	log[4] = pressed;
+	for (uint8_t i=0; i < (SEQUENCE_LENGTH-1); i++)
+	{
+		log[i] = log[i+1];	
+	}
+	log[SEQUENCE_LENGTH-1] = pressed;
 }
 
 static void debounce_detector(DETECTOR& detector, bool state)
@@ -86,14 +104,17 @@ static void debounce_task_fn(TaskAction* this_task)
 
 	for (i=0; i<NUMBER_OF_DETECTORS; i++)
 	{
-		debounce_detector(s_detectors[i], digitalRead(DETECTOR_PINS[i])==s_detector_trip_condition);
-		if (s_detectors[i].tripped) { s_tripped_count++; }
-		at_least_one_just_tripped |= s_detectors[i].just_tripped;
+		if (detector_in_sequence(i))
+		{
+			debounce_detector(s_detectors[i], digitalRead(DETECTOR_PINS[i])==s_detector_trip_condition);
+			if (s_detectors[i].tripped) { s_tripped_count++; }
+			at_least_one_just_tripped |= s_detectors[i].just_tripped;
+		}
 	}
 
 	if (at_least_one_just_tripped && (s_tripped_count == 1))
 	{
-		log_tripped( get_tripped(s_detectors), s_last_tripped );
+		log_tripped( get_tripped(s_detectors), s_sequence );
 		*sp_detector_update_flag = true;		
 	}
 }
@@ -115,9 +136,14 @@ void detectors_setup(bool& detector_update_flag)
 
 	sp_detector_update_flag = &detector_update_flag;
 
+	for (uint8_t i=0; i<SEQUENCE_LENGTH; i++)
+	{
+		s_sequence[i] = NO_DETECT;
+	}
+
 	for (uint8_t i=0; i<NUMBER_OF_DETECTORS; i++)
 	{
-		pinMode(DETECTOR_PINS[i], INPUT);
+		pinMode(DETECTOR_PINS[i], INPUT_PULLUP);
 		s_detectors[i].just_tripped = false;
 		s_detectors[i].tripped = false;
 		s_detectors[i].just_untripped = false;
@@ -134,9 +160,9 @@ void detectors_get(char * values)
 {
 	if (!values) { return; }
 	
-	for (uint8_t i=0; i<NUMBER_OF_DETECTORS; i++)
+	for (uint8_t i=0; i<SEQUENCE_LENGTH; i++)
 	{
-		values[i] = s_last_tripped[i];
+		values[i] = s_sequence[i];
 	}
 }
 
@@ -144,9 +170,9 @@ bool detectors_match_sequence(char const * to_match)
 {
 	if (!to_match) { return false; }
 
-	for (uint8_t i=0; i<NUMBER_OF_DETECTORS; i++)
+	for (uint8_t i=0; i<SEQUENCE_LENGTH; i++)
 	{
-		if (to_match[i] != s_last_tripped[i]) { return false; }
+		if (to_match[i] != s_sequence[i]) { return false; }
 	}
 	return true;
 }

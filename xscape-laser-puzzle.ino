@@ -67,7 +67,7 @@ static void debug_task_fn(TaskAction* this_task)
 	case MODE_LASERS:
 		Serial.print("Lasers: ");
 		detectors_get(detectors);
-		for (uint8_t i = 0; i < NUMBER_OF_DETECTORS; i++)
+		for (uint8_t i = 0; i < SEQUENCE_LENGTH; i++)
 		{
 			Serial.print((int)detectors[i]);
 			Serial.print(",");
